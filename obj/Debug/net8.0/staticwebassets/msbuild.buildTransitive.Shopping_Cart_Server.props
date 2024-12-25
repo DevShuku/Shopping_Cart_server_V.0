@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\buildMultiTargeting\Shopping_Cart_Server.props" />
+</Project>
