@@ -1,4 +1,8 @@
-﻿namespace Shopping_Cart_Server.Controllers
+﻿using Microsoft.AspNetCore.Mvc;
+using Shopping_Cart_Server.Models;
+
+
+namespace Shopping_Cart_Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

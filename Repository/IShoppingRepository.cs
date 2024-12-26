@@ -1,4 +1,6 @@
-﻿public interface IShoppingRepository
+﻿using Shopping_Cart_Server.Models;
+
+public interface IShoppingRepository
 {
     Task<Response> GetAllProductsAsync();
     Task<Response> AddItemToCartAsync(CartItem cartItem);

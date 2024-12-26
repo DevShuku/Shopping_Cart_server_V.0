@@ -1,4 +1,7 @@
-﻿public class ShoppingRepository : IShoppingRepository
+﻿using Microsoft.Data.SqlClient;
+using Shopping_Cart_Server.Models;
+
+public class ShoppingRepository : IShoppingRepository
 {
     private readonly string _connectionString;
 

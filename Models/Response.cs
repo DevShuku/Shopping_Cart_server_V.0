@@ -5,5 +5,6 @@
         public int StatusCode { get; set; }
         public string StatusMessage { get; set; }
         public List<Products> listProducts { get; set; }
+        public List<CartItem> CartItems { get; internal set; }
     }
 }

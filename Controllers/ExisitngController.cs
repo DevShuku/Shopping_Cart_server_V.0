@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Shopping_Cart_Server.Models;
+using System.Data;
 
 namespace Shopping_Cart_Server.Controllers
 {
@@ -7,7 +10,7 @@ namespace Shopping_Cart_Server.Controllers
     public class ExisitngController : Controller
     {
         private readonly IConfiguration _configuration;
-        public ShopController(IConfiguration configuration)
+        public ExisitngController(IConfiguration configuration)
         {
             _configuration = configuration;
 
