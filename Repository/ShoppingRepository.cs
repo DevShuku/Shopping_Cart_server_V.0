@@ -85,7 +85,7 @@ public class ShoppingRepository : IShoppingRepository
                 command.Parameters.AddWithValue("@ProductId", cartItem.ProductId);
                 command.Parameters.AddWithValue("@Quantity", cartItem.Quantity);
                 command.Parameters.AddWithValue("@Price", cartItem.Price);
-
+              
                 await connection.OpenAsync();
                 var rowsAffected = await command.ExecuteNonQueryAsync();
 
@@ -118,13 +118,16 @@ public class ShoppingRepository : IShoppingRepository
     public async Task<Response> GetCartItemsAsync()
     {
         var response = new Response();
-        var cartItems = new List<CartItem>();
+        var cartResponse = new List<CartItemResponse>(); 
 
         try
         {
             using (var connection = new SqlConnection(_connectionString))
             {
-                var query = "SELECT * FROM tblCart";
+                // var query = "SELECT ProductId, SUM(Quantity) AS Quantity,Price FROM  tblCart GROUP BY ProductId, Price";
+                var query = "SELECT c.ProductId, p.Name, p.Image, SUM(c.Quantity) AS Quantity, c.Price FROM tblCart c " +
+                            " JOIN tblProducts p ON c.ProductId = p.ID " +
+                            " GROUP BY c.ProductId,p.Name, p.Image, c.Price";
                 var command = new SqlCommand(query, connection);
 
                 await connection.OpenAsync();
@@ -132,19 +135,21 @@ public class ShoppingRepository : IShoppingRepository
                 {
                     while (await reader.ReadAsync())
                     {
-                        cartItems.Add(new CartItem
+
+                        cartResponse.Add(new CartItemResponse
                         {
-                            Id = Convert.ToInt32(reader["Id"]),
-                            ProductId = Convert.ToInt32(reader["ProductId"]),
-                            Quantity = Convert.ToInt32(reader["Quantity"]),
-                            Price = Convert.ToDecimal(reader["Price"])
+                            ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
+                            Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
+                            Price = reader.GetDecimal(reader.GetOrdinal("Price")),
+                            ProductName = reader.IsDBNull(reader.GetOrdinal("Name")) ? null : reader.GetString(reader.GetOrdinal("Name")),
+                            ImageUrl = reader.IsDBNull(reader.GetOrdinal("Image")) ? null : reader.GetString(reader.GetOrdinal("Image"))
                         });
                     }
                 }
 
                 response.StatusCode = 200;
                 response.StatusMessage = "Cart items retrieved successfully.";
-                response.CartItems = cartItems;
+                response.CartItems = cartResponse;
             }
         }
         catch (Exception ex)
@@ -156,44 +161,60 @@ public class ShoppingRepository : IShoppingRepository
         return response;
     }
 
-    public async Task<Response> UpdateCartItemAsync(int cartItemId, int quantity)
+    public async Task<Response> GetCartItemsAsync1()
     {
         var response = new Response();
+        var cartResponse = new List<CartItemResponse>();
 
         try
         {
-            using (var connection = new SqlConnection(_connectionString))
-            {
-                var query = "UPDATE tblCart SET Quantity = @Quantity WHERE Id = @CartItemId";
-                var command = new SqlCommand(query, connection);
-                command.Parameters.AddWithValue("@Quantity", quantity);
-                command.Parameters.AddWithValue("@CartItemId", cartItemId);
+            // Define query
+            var query = @"
+            SELECT 
+                c.ProductId, 
+                p.Name, 
+                p.Image, 
+                SUM(c.Quantity) AS Quantity, 
+                c.Price 
+            FROM tblCart c
+            JOIN tblProducts p ON c.ProductId = p.ID
+            GROUP BY c.ProductId, p.Name, p.Image, c.Price";
 
+            using (var connection = new SqlConnection(_connectionString))
+            using (var command = new SqlCommand(query, connection))
+            {
                 await connection.OpenAsync();
-                var rowsAffected = await command.ExecuteNonQueryAsync();
-
-                if (rowsAffected > 0)
+                using (var reader = await command.ExecuteReaderAsync())
                 {
-                    response.StatusCode = 200;
-                    response.StatusMessage = "Cart item updated successfully.";
-                }
-                else
-                {
-                    response.StatusCode = 404;
-                    response.StatusMessage = "Cart item not found.";
+                    // Read and map data
+                    while (await reader.ReadAsync())
+                    {
+                        cartResponse.Add(new CartItemResponse
+                        {
+                            ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
+                            Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
+                            Price = reader.GetDecimal(reader.GetOrdinal("Price")),
+                            ProductName = reader.IsDBNull(reader.GetOrdinal("Name")) ? null : reader.GetString(reader.GetOrdinal("Name")),
+                            ImageUrl = reader.IsDBNull(reader.GetOrdinal("Image")) ? null : reader.GetString(reader.GetOrdinal("Image"))
+                        });
+                    }
                 }
             }
+            response.StatusCode = 200;
+            response.StatusMessage = "Cart items retrieved successfully.";
+            response.CartItems = cartResponse;
         }
         catch (Exception ex)
         {
             response.StatusCode = 500;
-            response.StatusMessage = "An error occurred: " + ex.Message;
+            response.StatusMessage = $"An error occurred: {ex.Message}";
         }
 
         return response;
     }
 
-    public async Task<Response> RemoveCartItemAsync(int cartItemId)
+
+    public async Task<Response> RemoveCartItemAsync(int productId)
     {
         var response = new Response();
 
@@ -201,9 +222,9 @@ public class ShoppingRepository : IShoppingRepository
         {
             using (var connection = new SqlConnection(_connectionString))
             {
-                var query = "DELETE FROM tblCart WHERE Id = @CartItemId";
+                var query = "DELETE FROM tblCart WHERE ProductId = @ProductId";
                 var command = new SqlCommand(query, connection);
-                command.Parameters.AddWithValue("@CartItemId", cartItemId);
+                command.Parameters.AddWithValue("@ProductId", productId);
 
                 await connection.OpenAsync();
                 var rowsAffected = await command.ExecuteNonQueryAsync();
@@ -218,32 +239,6 @@ public class ShoppingRepository : IShoppingRepository
                     response.StatusCode = 404;
                     response.StatusMessage = "Cart item not found.";
                 }
-            }
-        }
-        catch (Exception ex)
-        {
-            response.StatusCode = 500;
-            response.StatusMessage = "An error occurred: " + ex.Message;
-        }
-
-        return response;
-    }
-
-    public async Task<Response> ApplyCouponAsync(string couponCode)
-    {
-        var response = new Response();
-
-        try
-        {
-            if (couponCode == "DISCOUNT10")
-            {
-                response.StatusCode = 200;
-                response.StatusMessage = "Coupon applied successfully. 10% discount applied.";
-            }
-            else
-            {
-                response.StatusCode = 400;
-                response.StatusMessage = "Invalid coupon code.";
             }
         }
         catch (Exception ex)

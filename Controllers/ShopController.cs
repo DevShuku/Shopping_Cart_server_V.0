@@ -95,21 +95,6 @@ namespace Shopping_Cart_Server.Controllers
             }
         }
 
-        [HttpPut]
-        [Route("UpdateCartItem")]
-        public async Task<IActionResult> UpdateCartItemAsync(int cartItemId, int quantity)
-        {
-            try
-            {
-                var response = await _shoppingRepository.UpdateCartItemAsync(cartItemId, quantity);
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { StatusCode = 500, StatusMessage = ex.Message });
-            }
-        }
-
         [HttpDelete]
         [Route("RemoveCartItem")]
         public async Task<IActionResult> RemoveCartItemAsync(int cartItemId)
@@ -125,20 +110,6 @@ namespace Shopping_Cart_Server.Controllers
             }
         }
 
-        [HttpPost]
-        [Route("ApplyCoupon")]
-        public async Task<IActionResult> ApplyCouponAsync([FromBody] string couponCode)
-        {
-            try
-            {
-                var response = await _shoppingRepository.ApplyCouponAsync(couponCode);
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { StatusCode = 500, StatusMessage = ex.Message });
-            }
-        }
         #endregion
     }
 }
