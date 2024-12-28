@@ -161,59 +161,6 @@ public class ShoppingRepository : IShoppingRepository
         return response;
     }
 
-    public async Task<Response> GetCartItemsAsync1()
-    {
-        var response = new Response();
-        var cartResponse = new List<CartItemResponse>();
-
-        try
-        {
-            // Define query
-            var query = @"
-            SELECT 
-                c.ProductId, 
-                p.Name, 
-                p.Image, 
-                SUM(c.Quantity) AS Quantity, 
-                c.Price 
-            FROM tblCart c
-            JOIN tblProducts p ON c.ProductId = p.ID
-            GROUP BY c.ProductId, p.Name, p.Image, c.Price";
-
-            using (var connection = new SqlConnection(_connectionString))
-            using (var command = new SqlCommand(query, connection))
-            {
-                await connection.OpenAsync();
-                using (var reader = await command.ExecuteReaderAsync())
-                {
-                    // Read and map data
-                    while (await reader.ReadAsync())
-                    {
-                        cartResponse.Add(new CartItemResponse
-                        {
-                            ProductId = reader.GetInt32(reader.GetOrdinal("ProductId")),
-                            Quantity = reader.GetInt32(reader.GetOrdinal("Quantity")),
-                            Price = reader.GetDecimal(reader.GetOrdinal("Price")),
-                            ProductName = reader.IsDBNull(reader.GetOrdinal("Name")) ? null : reader.GetString(reader.GetOrdinal("Name")),
-                            ImageUrl = reader.IsDBNull(reader.GetOrdinal("Image")) ? null : reader.GetString(reader.GetOrdinal("Image"))
-                        });
-                    }
-                }
-            }
-            response.StatusCode = 200;
-            response.StatusMessage = "Cart items retrieved successfully.";
-            response.CartItems = cartResponse;
-        }
-        catch (Exception ex)
-        {
-            response.StatusCode = 500;
-            response.StatusMessage = $"An error occurred: {ex.Message}";
-        }
-
-        return response;
-    }
-
-
     public async Task<Response> RemoveCartItemAsync(int productId)
     {
         var response = new Response();
